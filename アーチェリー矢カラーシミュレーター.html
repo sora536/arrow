@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>アーチェリー矢カラーシミュレーター</title>
+<style>
+:root{
+  --bg:#f4f5f2; --ink:#1d2421; --sub:#5d6862; --line:#d6dad5; --panel:#ffffff; --accent:#1f5f4a;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#161b19; --ink:#eef1ee; --sub:#9aa59f; --line:#2f3935; --panel:#1f2623; --accent:#6fcfa8; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Sans","Yu Gothic","Noto Sans JP",sans-serif;line-height:1.6}
+main{max-width:1000px;margin:0 auto;padding:24px 16px 48px}
+h1{font-size:1.4rem;margin:0 0 4px;letter-spacing:.02em}
+p.lead{margin:0 0 16px;color:var(--sub);font-size:.9rem}
+.stage{background:linear-gradient(#ffffff,#eceeea);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.stage svg{display:block;width:100%;height:auto;cursor:grab;touch-action:pan-y;user-select:none}
+.panel{margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+fieldset{background:var(--panel);border:1px solid var(--line);border-radius:6px;margin:0;padding:12px 14px 14px}
+legend{font-weight:700;font-size:.95rem;padding:0 6px}
+.sw{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.sw button{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0}
+.sw button[aria-pressed="true"]{outline:3px solid var(--accent);outline-offset:2px}
+.sw button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:.9rem}
+.row input[type=color]{width:44px;height:32px;border:1px solid var(--line);background:none;padding:2px;border-radius:4px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{background:none;border:0;color:var(--ink);padding:6px 14px;cursor:pointer;font:inherit;font-size:.9rem}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.name{color:var(--sub);font-size:.85rem;margin-left:auto}
+.summary{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;font-size:.9rem;display:flex;gap:16px;flex-wrap:wrap;align-items:center}
+.summary b{font-weight:700}
+.summary code{font-family:ui-monospace,Menlo,monospace}
+button.act{font:inherit;font-size:.9rem;border:1px solid var(--line);background:none;color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer}
+button.act:hover{border-color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <h1>矢のノック・羽カラーシミュレーター</h1>
+  <p class="lead">ノックと羽の色を選ぶと、矢のイメージがすぐに変わります。矢はゆっくり回転します。ドラッグで好きな角度に回せます。</p>
+
+  <div class="stage">
+    <svg id="arrow" viewBox="0 0 1000 230" role="img" aria-label="矢のプレビュー">
+      <defs>
+        <linearGradient id="tube" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".0"/>
+          <stop offset=".25" stop-color="#fff" stop-opacity=".38"/>
+          <stop offset=".6" stop-color="#000" stop-opacity=".0"/>
+          <stop offset="1" stop-color="#000" stop-opacity=".45"/>
+        </linearGradient>
+        <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".05"/>
+          <stop offset=".45" stop-color="#fff" stop-opacity=".45"/>
+          <stop offset=".6" stop-color="#fff" stop-opacity=".05"/>
+          <stop offset="1" stop-color="#000" stop-opacity=".18"/>
+        </linearGradient>
+        <path id="vane" d=""/>
+        <clipPath id="vclip"><use href="#vane"/></clipPath>
+        <linearGradient id="vgrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fff" stop-opacity=".30"/>
+          <stop offset=".45" stop-color="#fff" stop-opacity="0"/>
+          <stop offset=".8" stop-color="#000" stop-opacity=".10"/>
+          <stop offset="1" stop-color="#000" stop-opacity=".38"/>
+        </linearGradient>
+        <g id="vaneFx">
+          <g clip-path="url(#vclip)">
+            <rect x="680" y="90" width="180" height="60" fill="url(#vgrad)"/>
+            <path d="M692 143 C740 124 795 108 850 104" stroke="#fff" stroke-opacity=".45" stroke-width="2.5" fill="none"/>
+            <path d="M692 143 C745 130 800 118 850 116" stroke="#fff" stroke-opacity=".28" stroke-width="6" fill="none"/>
+            <path d="M700 144 C750 138 805 130 850 130" stroke="#fff" stroke-opacity=".22" stroke-width="3" fill="none"/>
+            <rect x="680" y="138" width="180" height="8" fill="#000" opacity=".28"/>
+          </g>
+          <use href="#vane" fill="none" stroke="#000" stroke-opacity=".28" stroke-width="1"/>
+        </g>
+      </defs>
+
+      <!-- 上のシャフト（デカール） -->
+      <rect id="shaftTop" x="0" y="64" width="1000" height="14" fill="#1a1a1a"/>
+      <rect x="0" y="64" width="1000" height="14" fill="url(#tube)"/>
+      <g fill="#fff" opacity=".9">
+        <rect x="180" y="66" width="30" height="10"/>
+        <rect x="360" y="66" width="3" height="10"/><rect x="368" y="66" width="3" height="10"/><rect x="376" y="66" width="3" height="10"/>
+        <rect x="620" y="66" width="30" height="10"/>
+      </g>
+      <text x="400" y="56" font-size="15" fill="#1d2421" font-family="Helvetica,Arial,sans-serif" letter-spacing="3">SAMPLE ARROW</text>
+
+      <!-- 下のシャフト -->
+      <rect id="shaftBottom" x="0" y="144" width="868" height="14" fill="#1a1a1a"/>
+      <rect x="0" y="144" width="868" height="14" fill="url(#tube)"/>
+      <g fill="#fff" opacity=".9">
+        <rect x="180" y="146" width="30" height="10"/>
+        <rect x="560" y="146" width="30" height="10"/>
+      </g>
+
+      <g id="dyn"></g>
+    </svg>
+  </div>
+
+  <div class="panel">
+    <fieldset>
+      <legend>羽の色</legend>
+      <div class="sw" id="vaneSw"></div>
+      <div class="row">
+        <label>自由に選ぶ <input type="color" id="vaneCustom" value="#f58a1f"></label>
+        <span class="name" id="vaneName"></span>
+      </div>
+      <div class="row">
+        <label><input type="checkbox" id="cockOn"> 1枚だけ別の色にする（インデックスベーン）</label>
+      </div>
+      <div class="sw" id="cockSw" hidden></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>ノックの色</legend>
+      <div class="sw" id="nockSw"></div>
+      <div class="row">
+        <label>自由に選ぶ <input type="color" id="nockCustom" value="#12923a"></label>
+        <span class="name" id="nockName"></span>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>羽の形</legend>
+      <div class="row"><div class="seg" id="shapeSeg">
+        <button data-v="parabolic" aria-pressed="true">パラボリック</button>
+        <button data-v="shield" aria-pressed="false">シールド</button>
+      </div></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>シャフトの色</legend>
+      <div class="sw" id="shaftSw"></div>
+    </fieldset>
+  </div>
+
+  <div class="summary">
+    <span>羽 <b id="sumVane"></b></span>
+    <span>ノック <b id="sumNock"></b></span>
+    <button class="act" id="spin"></button>
+    <button class="act" id="reset">初期状態に戻す</button>
+    <button class="act" id="dl" hidden>画像（PNG）で保存</button>
+  </div>
+</main>
+
+<script>
+const VANES=[["白","#ffffff"],["黄","#f5c400"],["黒","#141414"],["ピンク","#f59ac0"],["青","#1f3fbf"],["緑","#5ccc2a"],["赤","#c4123f"],["オレンジ","#f58a1f"],["紫","#b565b5"]];
+const NOCKS=[["白","#e9e9e9"],["黒","#1a1a1a"],["半透明ブルー","#3f8fd0"],["オレンジレッド","#ff5a2a"],["アンバー","#f7b500"],["蛍光イエロー","#d8ff2a"],["クリア","#d9dde0"],["パープル","#6a1f8f"],["ネイビー","#1b2a8a"],["半透明グリーン","#3fae5a"],["ライム","#c9f27a"],["グリーン","#12923a"],["オレンジ","#ff7a1a"],["ブルー","#123c9c"],["蛍光ライム","#e0ff30"],["スカイブルー","#1f8fe0"],["バーガンディ","#a3194f"],["レッド","#c01c1c"],["グレー","#5a5a5a"]];
+const SHAFTS=[["黒","#1a1a1a"],["シルバー","#9aa1a6"],["紺","#1b2a4a"],["白","#e9e9e9"]];
+const CY=151,R0=7,X0=688,LEN=160,TW=0.55,N=36;
+function prof(shape,t){
+  if(shape==="parabolic"){
+    const H=44,tp=.72;
+    if(t<tp) return H*Math.pow(Math.sin(t/tp*Math.PI/2),1.4);
+    const u=(t-tp)/(1-tp); return H*Math.sqrt(Math.max(0,1-u*u));
+  }
+  const H=42;
+  if(t<.14){const u=(.14-t)/.14;return H*Math.sqrt(Math.max(0,1-u*u))}
+  if(t>.9){const u=(t-.9)/.1;return H*Math.sqrt(Math.max(0,1-u*u))}
+  return H;
+}
+const DEF={vane:"#f58a1f",cock:"#ffffff",cockOn:false,nock:"#12923a",shaft:"#1a1a1a",shape:"parabolic"};
+let S={...DEF};
+const $=id=>document.getElementById(id);
+const nameOf=(list,hex)=>{const f=list.find(x=>x[1].toLowerCase()===hex.toLowerCase());return f?f[0]:hex.toUpperCase()};
+
+function swatches(el,list,key){
+  el.innerHTML="";
+  list.forEach(([n,h])=>{
+    const b=document.createElement("button");
+    b.style.background=h;b.title=n;b.setAttribute("aria-label",n);b.dataset.h=h;
+    b.onclick=()=>{S[key]=h;render()};
+    el.appendChild(b);
+  });
+}
+function mark(el,val){[...el.children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.h.toLowerCase()===val.toLowerCase()))}
+
+function render(){
+  ["shaftTop","shaftBottom"].forEach(i=>$(i).setAttribute("fill",S.shaft));
+  draw();
+  mark($("vaneSw"),S.vane);mark($("nockSw"),S.nock);mark($("shaftSw"),S.shaft);mark($("cockSw"),S.cock);
+  $("vaneCustom").value=S.vane;$("nockCustom").value=S.nock;
+  $("vaneName").textContent=nameOf(VANES,S.vane);
+  $("nockName").textContent=nameOf(NOCKS,S.nock);
+  $("cockSw").hidden=!S.cockOn;$("cockOn").checked=S.cockOn;
+  $("sumVane").textContent=nameOf(VANES,S.vane)+(S.cockOn?"（インデックス："+nameOf(VANES,S.cock)+"）":"");
+  $("sumNock").textContent=nameOf(NOCKS,S.nock);
+  [...$("shapeSeg").children].forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===S.shape));
+}
+
+swatches($("vaneSw"),VANES,"vane");
+swatches($("cockSw"),VANES,"cock");
+swatches($("nockSw"),NOCKS,"nock");
+swatches($("shaftSw"),SHAFTS,"shaft");
+$("vaneCustom").oninput=e=>{S.vane=e.target.value;render()};
+$("nockCustom").oninput=e=>{S.nock=e.target.value;render()};
+$("cockOn").onchange=e=>{S.cockOn=e.target.checked;render()};
+$("shapeSeg").onclick=e=>{if(e.target.dataset.v){S.shape=e.target.dataset.v;render()}};
+$("reset").onclick=()=>{S={...DEF};render()};
+try{if(window.claude)claude.use("downloads").then(d=>{if(d)$("dl").hidden=false}).catch(()=>{})}catch(e){}
+$("dl").onclick=()=>{
+  const svg=$("arrow").cloneNode(true);
+  svg.setAttribute("xmlns","http://www.w3.org/2000/svg");
+  svg.setAttribute("width",2000);svg.setAttribute("height",460);
+  const url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:"image/svg+xml"}));
+  const img=new Image();
+  img.onload=()=>{
+    const c=document.createElement("canvas");c.width=2000;c.height=460;
+    const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,2000,460);x.drawImage(img,0,0,2000,460);
+    URL.revokeObjectURL(url);
+    c.toBlob(async b=>{try{const d=await claude.use("downloads");if(d&&b)await d.save({filename:"arrow.png",data:b})}catch(e){}},"image/png");
+  };
+  img.src=url;
+};
+
+let A=0.6,playing=!matchMedia("(prefers-reduced-motion: reduce)").matches,dragging=false;
+const f1=n=>n.toFixed(1);
+function vaneSvg(i){
+  const base=A+i*2*Math.PI/3,top=[],bot=[],hl=[];
+  for(let k=0;k<=N;k++){
+    const t=k/N,x=X0+LEN*t,ph=base+TW*t,c=Math.cos(ph),h=prof(S.shape,t);
+    top.push(f1(x)+","+f1(CY-(R0+h)*c));
+    bot.push(f1(x)+","+f1(CY-R0*c));
+    hl.push(f1(x)+","+f1(CY-(R0+.55*h)*c));
+  }
+  const pts=top.concat(bot.reverse()).join(" "),mid=base+TW/2;
+  const z=Math.sin(mid),b=Math.min(1,Math.abs(-.5*Math.sin(mid)+.8*Math.cos(mid))/.94);
+  const dark=Math.min(.6,(1-b)*.55+(z<0?.18:0));
+  const col=(i===0&&S.cockOn)?S.cock:S.vane;
+  const svg='<g><polygon points="'+pts+'" fill="'+col+'"/>'+
+    '<polygon points="'+pts+'" fill="url(#vgrad)"/>'+
+    '<polygon points="'+pts+'" fill="#000" fill-opacity="'+dark.toFixed(2)+'"/>'+
+    '<polyline points="'+hl.join(" ")+'" fill="none" stroke="#fff" stroke-opacity="'+(.5*b).toFixed(2)+'" stroke-width="2.5" stroke-linecap="round"/>'+
+    '<polygon points="'+pts+'" fill="none" stroke="#000" stroke-opacity=".3" stroke-width="1"/></g>';
+  return {z,svg};
+}
+function prongSvg(sg){
+  const y=CY-sg*6.75*Math.cos(A)-3.25,z=sg*Math.sin(A);
+  const back=z<0?'<rect x="900" y="'+f1(y)+'" width="32" height="6.5" rx="2.4" fill="#000" opacity=".25"/>':"";
+  return {z,svg:'<rect x="900" y="'+f1(y)+'" width="32" height="6.5" rx="2.4" fill="'+S.nock+'"/>'+
+    '<rect x="900" y="'+f1(y)+'" width="32" height="6.5" rx="2.4" fill="url(#tube)"/>'+back+
+    '<rect x="904" y="'+f1(y+1)+'" width="22" height="1.3" rx=".6" fill="#fff" opacity=".45"/>'};
+}
+function draw(){
+  const v=[0,1,2].map(vaneSvg).sort((p,q)=>p.z-q.z);
+  const pr=[prongSvg(1),prongSvg(-1)].sort((p,q)=>p.z-q.z);
+  const shaft='<rect x="676" y="144" width="192" height="14" fill="'+S.shaft+'"/><rect x="676" y="144" width="192" height="14" fill="url(#tube)"/>';
+  const wrap=x=>'<rect x="'+x+'" y="141.5" width="14" height="19" rx="3" fill="#0e0e0e"/><rect x="'+(x+2)+'" y="144" width="3" height="14" rx="1.5" fill="#fff" opacity=".35"/>';
+  const body='<path d="M866 141.5 L888 141.5 L906 141.5 L906 160.5 L888 160.5 L866 160.5 Z" fill="'+S.nock+'"/>'+
+    '<path d="M866 141.5 L906 141.5 L906 160.5 L866 160.5 Z" fill="url(#tube)"/>'+
+    '<rect x="864" y="140.5" width="5" height="21" rx="1.5" fill="#000" opacity=".25"/>'+
+    '<rect x="872" y="144" width="30" height="1.8" rx=".9" fill="#fff" opacity=".5"/>';
+  $("dyn").innerHTML=v.filter(e=>e.z<0).map(e=>e.svg).join("")+shaft+
+    v.filter(e=>e.z>=0).map(e=>e.svg).join("")+wrap(680)+wrap(838)+
+    pr[0].svg+body+pr[1].svg;
+}
+let last=0;
+function tick(t){
+  const dt=Math.min(.05,(t-last)/1000);last=t;
+  if(playing&&!dragging){A+=dt*0.3;draw()}
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+const st=document.querySelector(".stage");let dx0=0;
+st.addEventListener("pointerdown",e=>{dragging=true;dx0=e.clientX;st.setPointerCapture(e.pointerId)});
+st.addEventListener("pointermove",e=>{if(dragging){A+=(e.clientX-dx0)*.012;dx0=e.clientX;draw()}});
+["pointerup","pointercancel"].forEach(n=>st.addEventListener(n,()=>dragging=false));
+const spin=$("spin");
+function spinLabel(){spin.textContent=playing?"回転を止める":"回転させる"}
+spin.onclick=()=>{playing=!playing;spinLabel()};
+spinLabel();
+render();
+</script>
+</body>
+</html>
